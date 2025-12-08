@@ -1,0 +1,316 @@
+openapi: 3.0.0
+info:
+  title: Products API
+  version: 1.0.0
+  description: |
+    Minimal REST API demonstrating KATANA codegen capabilities.
+    In-memory product catalog without persistent storage.
+
+paths:
+  /products:
+    get:
+      operationId: list_products
+      summary: List all products
+      description: Returns paginated list of products
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Product list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductList'
+
+    post:
+      operationId: create_product
+      summary: Create new product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Validation error
+        '409':
+          description: Product with SKU already exists
+
+  /products/{id}:
+    get:
+      operationId: get_product
+      summary: Get product by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Product found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Product not found
+
+    put:
+      operationId: update_product
+      summary: Update product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductRequest'
+      responses:
+        '200':
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Product not found
+        '400':
+          description: Validation error
+
+    delete:
+      operationId: delete_product
+      summary: Delete product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Product deleted
+        '404':
+          description: Product not found
+
+  /products/search:
+    get:
+      operationId: search_products
+      summary: Search products by name
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+
+  /products/{id}/stock:
+    post:
+      operationId: adjust_stock
+      summary: Adjust product stock
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockAdjustment'
+      responses:
+        '200':
+          description: Stock adjusted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  new_stock:
+                    type: integer
+        '404':
+          description: Product not found
+        '400':
+          description: Invalid adjustment
+
+components:
+  schemas:
+    Product:
+      type: object
+      required:
+        - id
+        - sku
+        - name
+        - price
+        - stock
+        - category
+      properties:
+        id:
+          type: integer
+          format: int64
+        sku:
+          type: string
+          pattern: '^[A-Z0-9-]{3,20}$'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+        price:
+          type: number
+          format: double
+          minimum: 0
+        stock:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+        category:
+          $ref: '#/components/schemas/ProductCategory'
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+
+    CreateProductRequest:
+      type: object
+      required:
+        - sku
+        - name
+        - price
+        - category
+      properties:
+        sku:
+          type: string
+          pattern: '^[A-Z0-9-]{3,20}$'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+        price:
+          type: number
+          format: double
+          minimum: 0
+        stock:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+          default: 0
+        category:
+          $ref: '#/components/schemas/ProductCategory'
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+
+    UpdateProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+        price:
+          type: number
+          format: double
+          minimum: 0
+        stock:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+        category:
+          $ref: '#/components/schemas/ProductCategory'
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+
+    ProductList:
+      type: object
+      required:
+        - items
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+    StockAdjustment:
+      type: object
+      required:
+        - delta
+      properties:
+        delta:
+          type: integer
+          minimum: -1000000
+          maximum: 1000000
+
+    ProductCategory:
+      type: string
+      enum:
+        - electronics
+        - clothing
+        - food
+        - books
+        - toys
+        - other
