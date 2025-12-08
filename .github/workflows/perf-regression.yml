@@ -74,45 +74,43 @@ jobs:
         echo "Running performance_benchmark (quick mode)..."
         timeout 120 ./build/benchmark/performance_benchmark 2>&1 | tee benchmark_results/performance_benchmark.log || true
 
-        # Parse results into JSON format
-        python3 << 'EOF'
-import json
-import re
-import os
+    - name: Parse Benchmark Results
+      run: |
+        python3 -c "
+        import json
+        import re
+        import os
 
-results = {}
+        results = {}
 
-# Parse benchmark output for key metrics
-def parse_benchmark_line(line):
-    # Match patterns like "Throughput: 12345.67 ops/sec" or "Latency p99: 0.123 ms"
-    patterns = [
-        r'(\w[\w\s]+):\s+([\d.]+)\s*(ops/sec|req/s|us|ms|ns)',
-        r'BM_(\w+)\s+([\d.]+)\s*(ns|us|ms|s)',
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, line)
-        if match:
-            name = match.group(1).strip().replace(' ', '_').lower()
-            value = float(match.group(2))
-            unit = match.group(3)
-            return name, value, unit
-    return None, None, None
+        def parse_benchmark_line(line):
+            patterns = [
+                r'(\w[\w\s]+):\s+([\d.]+)\s*(ops/sec|req/s|us|ms|ns)',
+                r'BM_(\w+)\s+([\d.]+)\s*(ns|us|ms|s)',
+            ]
+            for pattern in patterns:
+                match = re.search(pattern, line)
+                if match:
+                    name = match.group(1).strip().replace(' ', '_').lower()
+                    value = float(match.group(2))
+                    unit = match.group(3)
+                    return name, value, unit
+            return None, None, None
 
-for log_file in ['simple_benchmark.log', 'performance_benchmark.log']:
-    path = f'benchmark_results/{log_file}'
-    if os.path.exists(path):
-        with open(path) as f:
-            for line in f:
-                name, value, unit = parse_benchmark_line(line)
-                if name:
-                    results[name] = {'value': value, 'unit': unit}
+        for log_file in ['simple_benchmark.log', 'performance_benchmark.log']:
+            path = f'benchmark_results/{log_file}'
+            if os.path.exists(path):
+                with open(path) as f:
+                    for line in f:
+                        name, value, unit = parse_benchmark_line(line)
+                        if name:
+                            results[name] = {'value': value, 'unit': unit}
 
-# Save results
-with open('benchmark_results/current.json', 'w') as f:
-    json.dump(results, f, indent=2)
+        with open('benchmark_results/current.json', 'w') as f:
+            json.dump(results, f, indent=2)
 
-print(f"Parsed {len(results)} metrics")
-EOF
+        print(f'Parsed {len(results)} metrics')
+        "
 
     - name: Compare Against Baseline
       id: compare
