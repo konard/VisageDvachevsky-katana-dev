@@ -149,3 +149,17 @@ target_link_libraries(generated_api_benchmark
         pthread
 )
 add_dependencies(generated_api_benchmark generated_api_codegen)
+
+add_executable(products_api_benchmark products_api_benchmark.cpp)
+
+target_compile_options(products_api_benchmark
+    PRIVATE
+        -O3
+        -march=native
+)
+
+target_link_libraries(products_api_benchmark
+    PRIVATE
+        katana_core
+        pthread
+)
