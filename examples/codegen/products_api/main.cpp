@@ -135,7 +135,8 @@ public:
             product.name = std::string(req.name->data(), req.name->size());
         }
         if (req.description.has_value() && *req.description) {
-            product.description = std::string((*req.description)->data(), (*req.description)->size());
+            product.description =
+                std::string((*req.description)->data(), (*req.description)->size());
         }
         if (req.price.has_value()) {
             product.price = *req.price;
@@ -231,8 +232,8 @@ public:
     response create_product(const CreateProductRequest& body) override {
         auto product_opt = store_.create(body);
         if (!product_opt) {
-            return response::error(
-                problem_details::conflict("product.duplicate_sku", "Product with this SKU already exists"));
+            return response::error(problem_details::conflict(
+                "product.duplicate_sku", "Product with this SKU already exists"));
         }
 
         const auto& sp = *product_opt;
@@ -261,7 +262,8 @@ public:
     response get_product(int64_t id) override {
         auto product_opt = store_.get(id);
         if (!product_opt) {
-            return response::error(problem_details::not_found("product.not_found", "Product not found"));
+            return response::error(
+                problem_details::not_found("product.not_found", "Product not found"));
         }
 
         const auto& sp = *product_opt;
@@ -289,7 +291,8 @@ public:
 
     response update_product(int64_t id, const UpdateProductRequest& body) override {
         if (!store_.update(id, body)) {
-            return response::error(problem_details::not_found("product.not_found", "Product not found"));
+            return response::error(
+                problem_details::not_found("product.not_found", "Product not found"));
         }
 
         // Fetch updated product
@@ -323,7 +326,8 @@ public:
 
     response delete_product(int64_t id) override {
         if (!store_.remove(id)) {
-            return response::error(problem_details::not_found("product.not_found", "Product not found"));
+            return response::error(
+                problem_details::not_found("product.not_found", "Product not found"));
         }
         return response::no_content();
     }
@@ -374,10 +378,11 @@ public:
         if (!new_stock_opt) {
             auto product_opt = store_.get(id);
             if (!product_opt) {
-                return response::error(problem_details::not_found("product.not_found", "Product not found"));
+                return response::error(
+                    problem_details::not_found("product.not_found", "Product not found"));
             }
-            return response::error(problem_details::bad_request("stock.invalid_adjustment",
-                                                                 "Stock adjustment would result in invalid value"));
+            return response::error(problem_details::bad_request(
+                "stock.invalid_adjustment", "Stock adjustment would result in invalid value"));
         }
 
         std::string json = R"({"new_stock":)" + std::to_string(*new_stock_opt) + "}";
