@@ -163,3 +163,17 @@ target_link_libraries(products_api_benchmark
         katana_core
         pthread
 )
+
+add_executable(json_benchmark json_benchmark.cpp)
+
+target_compile_options(json_benchmark
+    PRIVATE
+        -O3
+        -march=native
+)
+
+target_link_libraries(json_benchmark
+    PRIVATE
+        katana_core
+        pthread
+)
